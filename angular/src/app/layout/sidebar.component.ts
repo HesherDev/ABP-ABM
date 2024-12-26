@@ -1,13 +1,7 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  Renderer2,
-  OnInit
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, Renderer2 } from '@angular/core';
 import { LayoutStoreService } from '@shared/layout/layout-store.service';
 
 @Component({
-  // tslint:disable-next-line:component-selector
   selector: 'sidebar',
   templateUrl: './sidebar.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -15,10 +9,7 @@ import { LayoutStoreService } from '@shared/layout/layout-store.service';
 export class SidebarComponent implements OnInit {
   sidebarExpanded: boolean;
 
-  constructor(
-    private renderer: Renderer2,
-    private _layoutStore: LayoutStoreService
-  ) {}
+  constructor(private renderer: Renderer2, private _layoutStore: LayoutStoreService) {}
 
   ngOnInit(): void {
     this._layoutStore.sidebarExpanded.subscribe((value) => {
@@ -29,9 +20,9 @@ export class SidebarComponent implements OnInit {
 
   toggleSidebar(): void {
     if (this.sidebarExpanded) {
-      this.hideSidebar();
-    } else {
       this.showSidebar();
+    } else {
+      this.hideSidebar();
     }
   }
 
