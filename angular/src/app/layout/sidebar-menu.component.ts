@@ -1,184 +1,123 @@
-import {Component, Injector, OnInit} from '@angular/core';
-import {AppComponentBase} from '@shared/app-component-base';
-import {
-    Router,
-    RouterEvent,
-    NavigationEnd,
-    PRIMARY_OUTLET
-} from '@angular/router';
-import {BehaviorSubject} from 'rxjs';
-import {filter} from 'rxjs/operators';
-import {MenuItem} from '@shared/layout/menu-item';
+import { Component, Injector, OnInit } from '@angular/core';
+import { AppComponentBase } from '@shared/app-component-base';
+import { Router, NavigationEnd, PRIMARY_OUTLET } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
+import { MenuItem } from '@shared/layout/menu-item';
 
 @Component({
-    selector: 'sidebar-menu',
-    templateUrl: './sidebar-menu.component.html'
+  selector: 'sidebar-menu',
+  templateUrl: './sidebar-menu.component.html',
 })
 export class SidebarMenuComponent extends AppComponentBase implements OnInit {
-    menuItems: MenuItem[];
-    menuItemsMap: { [key: number]: MenuItem } = {};
-    activatedMenuItems: MenuItem[] = [];
-    routerEvents: BehaviorSubject<RouterEvent> = new BehaviorSubject(undefined);
-    homeRoute = '/app/about';
+  menuItems: MenuItem[] = [];
+  menuItemsMap: { [key: number]: MenuItem } = {};
+  activatedMenuItems: MenuItem[] = [];
+  routerEvents: BehaviorSubject<any> = new BehaviorSubject(undefined);
+  homeRoute = '/app/about';
 
-    constructor(injector: Injector, private router: Router) {
-        super(injector);
+  constructor(injector: Injector, private router: Router) {
+    super(injector);
+  }
+
+  ngOnInit(): void {
+    this.menuItems = this.getMenuItems();
+    this.initializeMenuItems(this.menuItems);
+
+    // Observa eventos de navegación para actualizar el menú activo.
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        const currentUrl = event.url !== '/' ? event.url : this.homeRoute;
+        this.updateActiveMenuItems(currentUrl);
+      }
+    });
+  }
+
+  /**
+   * Devuelve los elementos del menú.
+   */
+  getMenuItems(): MenuItem[] {
+    return [
+      new MenuItem(this.l('About'), '/app/about', 'fas fa-info-circle'),
+      new MenuItem(this.l('HomePage'), '/app/home', 'fas fa-home'),
+      new MenuItem(this.l('Roles'), '/app/roles', 'fas fa-theater-masks'),
+      new MenuItem(this.l('Tenants'), '/app/tenants', 'fas fa-building'),
+      new MenuItem(this.l('Users'), '/app/users', 'fas fa-users'),
+      new MenuItem(this.l('Teams'), '/app/teams', 'fas fa-home'),
+    ];
+  }
+
+  /**
+   * Inicializa los elementos del menú con IDs y jerarquías.
+   */
+  initializeMenuItems(items: MenuItem[], parentId?: number): void {
+    items.forEach((item, index) => {
+      item.id = parentId ? Number(`${parentId}${index + 1}`) : index + 1;
+      if (parentId) item.parentId = parentId;
+      this.menuItemsMap[item.id] = item;
+
+      if (item.children) {
+        this.initializeMenuItems(item.children, item.id);
+      }
+    });
+  }
+
+  /**
+   * Actualiza los elementos del menú activo en función de la URL.
+   */
+  updateActiveMenuItems(url: string): void {
+    this.deactivateAllMenuItems(this.menuItems);
+    const activeItems = this.findMenuItemsByUrl(url, this.menuItems);
+    activeItems.forEach((item) => this.activateMenuItem(item));
+  }
+
+  /**
+   * Desactiva todos los elementos del menú.
+   */
+  deactivateAllMenuItems(items: MenuItem[]): void {
+    items.forEach((item) => {
+      item.isActive = false;
+      item.isCollapsed = true;
+      if (item.children) {
+        this.deactivateAllMenuItems(item.children);
+      }
+    });
+  }
+
+  /**
+   * Busca elementos del menú que coincidan con una URL.
+   */
+  findMenuItemsByUrl(url: string, items: MenuItem[]): MenuItem[] {
+    let result: MenuItem[] = [];
+    items.forEach((item) => {
+      if (item.route === url) {
+        result.push(item);
+      } else if (item.children) {
+        result = result.concat(this.findMenuItemsByUrl(url, item.children));
+      }
+    });
+    return result;
+  }
+
+  /**
+   * Activa un elemento del menú y sus padres.
+   */
+  activateMenuItem(item: MenuItem): void {
+    item.isActive = true;
+    item.isCollapsed = false;
+    if (item.parentId) {
+      const parent = this.menuItemsMap[item.parentId];
+      if (parent) this.activateMenuItem(parent);
     }
-
-    ngOnInit(): void {
-        this.menuItems = this.getMenuItems();
-        this.patchMenuItems(this.menuItems);
-
-        this.router.events.subscribe((event: NavigationEnd) => {
-            const currentUrl = event.url !== '/' ? event.url : this.homeRoute;
-                const primaryUrlSegmentGroup = this.router.parseUrl(currentUrl).root
-                    .children[PRIMARY_OUTLET];
-                if (primaryUrlSegmentGroup) {
-                    this.activateMenuItems('/' + primaryUrlSegmentGroup.toString());
-                }
-        });
-    }
-
-    getMenuItems(): MenuItem[] {
-        return [
-            new MenuItem(this.l('About'), '/app/about', 'fas fa-info-circle'),
-            new MenuItem(this.l('HomePage'), '/app/home', 'fas fa-home'),
-            new MenuItem(
-                this.l('Roles'),
-                '/app/roles',
-                'fas fa-theater-masks',
-                'Pages.Roles'
-            ),
-            new MenuItem(
-                this.l('Tenants'),
-                '/app/tenants',
-                'fas fa-building',
-                'Pages.Tenants'
-            ),
-            new MenuItem(
-                this.l('Users'),
-                '/app/users',
-                'fas fa-users',
-                'Pages.Users'
-            ),
-            new MenuItem(this.l('MultiLevelMenu'), '', 'fas fa-circle', '', [
-                new MenuItem('ASP.NET Boilerplate', '', 'fas fa-dot-circle', '', [
-                    new MenuItem(
-                        'Home',
-                        'https://aspnetboilerplate.com?ref=abptmpl',
-                        'far fa-circle'
-                    ),
-                    new MenuItem(
-                        'Templates',
-                        'https://aspnetboilerplate.com/Templates?ref=abptmpl',
-                        'far fa-circle'
-                    ),
-                    new MenuItem(
-                        'Samples',
-                        'https://aspnetboilerplate.com/Samples?ref=abptmpl',
-                        'far fa-circle'
-                    ),
-                    new MenuItem(
-                        'Documents',
-                        'https://aspnetboilerplate.com/Pages/Documents?ref=abptmpl',
-                        'far fa-circle'
-                    ),
-                ]),
-                new MenuItem('ASP.NET Zero', '', 'fas fa-dot-circle', '', [
-                    new MenuItem(
-                        'Home',
-                        'https://aspnetzero.com?ref=abptmpl',
-                        'far fa-circle'
-                    ),
-                    new MenuItem(
-                        'Features',
-                        'https://aspnetzero.com/Features?ref=abptmpl',
-                        'far fa-circle'
-                    ),
-                    new MenuItem(
-                        'Pricing',
-                        'https://aspnetzero.com/Pricing?ref=abptmpl#pricing',
-                        'far fa-circle'
-                    ),
-                    new MenuItem(
-                        'Faq',
-                        'https://aspnetzero.com/Faq?ref=abptmpl',
-                        'far fa-circle'
-                    ),
-                    new MenuItem(
-                        'Documents',
-                        'https://aspnetzero.com/Documents?ref=abptmpl',
-                        'far fa-circle'
-                    )
-                ])
-            ])
-        ];
-    }
-
-    patchMenuItems(items: MenuItem[], parentId?: number): void {
-        items.forEach((item: MenuItem, index: number) => {
-            item.id = parentId ? Number(parentId + '' + (index + 1)) : index + 1;
-            if (parentId) {
-                item.parentId = parentId;
-            }
-            if (parentId || item.children) {
-                this.menuItemsMap[item.id] = item;
-            }
-            if (item.children) {
-                this.patchMenuItems(item.children, item.id);
-            }
-        });
-    }
-
-    activateMenuItems(url: string): void {
-        this.deactivateMenuItems(this.menuItems);
-        this.activatedMenuItems = [];
-        const foundedItems = this.findMenuItemsByUrl(url, this.menuItems);
-        foundedItems.forEach((item) => {
-            this.activateMenuItem(item);
-        });
-    }
-
-    deactivateMenuItems(items: MenuItem[]): void {
-        items.forEach((item: MenuItem) => {
-            item.isActive = false;
-            item.isCollapsed = true;
-            if (item.children) {
-                this.deactivateMenuItems(item.children);
-            }
-        });
-    }
-
-    findMenuItemsByUrl(
-        url: string,
-        items: MenuItem[],
-        foundedItems: MenuItem[] = []
-    ): MenuItem[] {
-        items.forEach((item: MenuItem) => {
-            if (item.route === url) {
-                foundedItems.push(item);
-            } else if (item.children) {
-                this.findMenuItemsByUrl(url, item.children, foundedItems);
-            }
-        });
-        return foundedItems;
-    }
-
-    activateMenuItem(item: MenuItem): void {
-        item.isActive = true;
-        if (item.children) {
-            item.isCollapsed = false;
-        }
-        this.activatedMenuItems.push(item);
-        if (item.parentId) {
-            this.activateMenuItem(this.menuItemsMap[item.parentId]);
-        }
-    }
-
-    isMenuItemVisible(item: MenuItem): boolean {
-        if (!item.permissionName) {
-            return true;
-        }
-        return this.permission.isGranted(item.permissionName);
-    }
+  }
+  //asegura que Angular realice el seguimiento correcto de los elementos en la lista.
+  trackByItem(index: number, item: MenuItem): number | string {
+    return item.id || index; // Usa el ID del elemento o el índice como fallback
+  }
+  
+  /**
+   * Comprueba si un elemento del menú es visible basado en permisos.
+   */
+  isMenuItemVisible(item: MenuItem): boolean {
+    return item.permissionName ? this.permission.isGranted(item.permissionName) : true;
+  }
 }

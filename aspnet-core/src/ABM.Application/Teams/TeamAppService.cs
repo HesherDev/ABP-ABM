@@ -2,6 +2,7 @@
 using ABM.Teams.Dto;
 using Abp.Application.Services;
 using Abp.Domain.Repositories;
+using Castle.Components.DictionaryAdapter.Xml;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,5 +16,6 @@ namespace ABM.Teams
         public TeamAppService(IRepository<Team, int> repository) : base(repository)
         {
         }
+
     }
 }

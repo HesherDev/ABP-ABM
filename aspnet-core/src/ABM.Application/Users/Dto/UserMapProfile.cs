@@ -1,4 +1,6 @@
 ﻿using ABM.Authorization.Users;
+using ABM.Entities;
+using ABM.Teams.Dto;
 using AutoMapper;
 
 namespace ABM.Users.Dto;
@@ -14,5 +16,7 @@ public class UserMapProfile : Profile
 
         CreateMap<CreateUserDto, User>();
         CreateMap<CreateUserDto, User>().ForMember(x => x.Roles, opt => opt.Ignore());
+
+
     }
 }
